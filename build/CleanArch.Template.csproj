@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!-- Proyecto de empaquetado de la plantilla (dotnet new). No se compila código: solo genera el .nupkg. -->
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <PackageType>Template</PackageType>
+        <PackageId>Ncobianm.CleanArch.Template</PackageId>
+        <Title>Clean Architecture + DDD Web API template</Title>
+        <Authors>Ignacio Cobian</Authors>
+        <Description>Plantilla dotnet new para crear soluciones .NET con Clean Architecture + DDD.</Description>
+        <PackageTags>dotnet-new;templates;clean-architecture;ddd;webapi</PackageTags>
+        <RepositoryUrl>https://github.com/ncobianm/dotnet-clean-arch-template</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageProjectUrl>https://github.com/ncobianm/dotnet-clean-arch-template</PackageProjectUrl>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+
+        <!-- Versión local por defecto; en CI se sobrescribe con /p:PackageVersion -->
+        <VersionPrefix>1.0.0</VersionPrefix>
+
+        <IncludeContentInPack>true</IncludeContentInPack>
+        <IncludeBuildOutput>false</IncludeBuildOutput>
+        <ContentTargetFolders>content</ContentTargetFolders>
+        <EnableDefaultItems>false</EnableDefaultItems>
+        <NoDefaultExcludes>true</NoDefaultExcludes>
+        <NoWarn>$(NoWarn);NU5128;NU5110;NU5111</NoWarn>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <TemplateRoot>$(MSBuildThisFileDirectory)..\</TemplateRoot>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Content Include="$(TemplateRoot)**\*"
+                 Exclude="$(TemplateRoot).git\**;
+                          $(TemplateRoot).github\**;
+                          $(TemplateRoot).idea\**;
+                          $(TemplateRoot).vs\**;
+                          $(TemplateRoot)build\**;
+                          $(TemplateRoot)**\bin\**;
+                          $(TemplateRoot)**\obj\**;
+                          $(TemplateRoot)**\*.user"
+                 PackagePath="content" />
+        <Compile Remove="**\*" />
+        <None Include="$(TemplateRoot)README.md" Pack="true" PackagePath="\" />
+    </ItemGroup>
+
+</Project>

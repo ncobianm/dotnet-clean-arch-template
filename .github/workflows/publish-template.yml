@@ -1,0 +1,80 @@
+name: Build & publish template
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*.*.*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  TEMPLATE_PROJECT: build/CleanArch.Template.csproj
+  PACKAGE_ID: Ncobianm.CleanArch.Template
+  NUGET_SOURCE: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # Tag vX.Y.Z  -> X.Y.Z
+      # main        -> <build/version.txt>.<run_number>
+      # PR / otros  -> <build/version.txt>.<run_number>-ci
+      - name: Generate version
+        id: version
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            BASE="$(tr -d '[:space:]' < build/version.txt)"
+            VERSION="${BASE}.${GITHUB_RUN_NUMBER}"
+            if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+              VERSION="${VERSION}-ci"
+            fi
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Package version: $VERSION"
+
+      - name: Build solution
+        run: dotnet build CleanArch.sln -c Release
+
+      - name: Pack template
+        run: dotnet pack "$TEMPLATE_PROJECT" -c Release -o ./artifacts -p:PackageVersion=${{ steps.version.outputs.version }}
+
+      # Comprueba que la plantilla se instala, genera un proyecto y este compila
+      - name: Validate template
+        shell: bash
+        run: |
+          dotnet new install ./artifacts/${PACKAGE_ID}.${{ steps.version.outputs.version }}.nupkg
+          dotnet new cleanarch -n Sample.Project -o "$RUNNER_TEMP/sample"
+          dotnet build "$RUNNER_TEMP/sample/Sample.Project.sln" -c Release
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: template-package
+          path: ./artifacts/*.nupkg
+
+      - name: Publish to GitHub Packages
+        if: github.event_name != 'pull_request'
+        run: >
+          dotnet nuget push "./artifacts/*.nupkg"
+          --source "$NUGET_SOURCE"
+          --api-key ${{ secrets.GITHUB_TOKEN }}
+          --skip-duplicate
