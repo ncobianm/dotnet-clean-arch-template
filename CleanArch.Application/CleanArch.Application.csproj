@@ -15,4 +15,8 @@
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\CleanArch.Domain\CleanArch.Domain.csproj" />
+    </ItemGroup>
+
 </Project>
